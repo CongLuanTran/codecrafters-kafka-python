@@ -6,6 +6,9 @@ class ResponseHeader:
         header_size = len(bytes(self))
         return header_size.to_bytes(4, byteorder="big", signed=True)
 
+    def __bytes__(self) -> bytes:
+        return self.correlation_id.to_bytes(4, byteorder="big", signed=True)
+
     @property
     def correlation_id(self):
         """The correlation_id property."""
@@ -14,6 +17,3 @@ class ResponseHeader:
     @correlation_id.setter
     def correlation_id(self, value):
         self._correlation_id = value
-
-    def __bytes__(self) -> bytes:
-        return self.correlation_id.to_bytes(4, byteorder="big", signed=True)
