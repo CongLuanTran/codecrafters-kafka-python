@@ -1,19 +1,44 @@
-class ResponseHeader:
+from abc import ABC, abstractmethod
+
+
+class KafkaResponseHeader:
     def __init__(self, correlation_id: int):
         self.correlation_id = correlation_id
 
-    def size(self) -> bytes:
-        header_size = len(bytes(self))
-        return header_size.to_bytes(4, byteorder="big", signed=True)
-
     def __bytes__(self) -> bytes:
-        return self.correlation_id.to_bytes(4, byteorder="big", signed=True)
+        return self.correlation_id.to_bytes(4, "big", signed=True)
+
+    def size(self):
+        return len(bytes(self))
 
     @property
-    def correlation_id(self):
+    def correlation_id(self) -> int:
         """The correlation_id property."""
         return self._correlation_id
 
     @correlation_id.setter
     def correlation_id(self, value):
         self._correlation_id = value
+
+
+class KafkaResponseBody(ABC):
+    @abstractmethod
+    def __bytes__(self) -> bytes:
+        pass
+
+    @abstractmethod
+    def size(self) -> int:
+        pass
+
+
+class KafkaResponse:
+    def __init__(self, header: KafkaResponseHeader, body: KafkaResponseBody | None):
+        self.header = header
+        self.body = body
+
+    def __bytes__(self):
+        return bytes(self.header) + (bytes(self.body) if self.body else b"")
+
+    def size(self):
+        total_size = self.header.size() + (self.body.size() if self.body else 0)
+        return total_size.to_bytes(4, "big", signed=True)

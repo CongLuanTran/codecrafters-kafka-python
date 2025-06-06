@@ -1,4 +1,4 @@
-class RequestHeader:
+class KafkaRequestHeader:
     def __init__(self, bytes: bytes):
         self.api_key = bytes[:2]
         self.api_version = bytes[2:4]
@@ -54,3 +54,14 @@ class RequestHeader:
     @tag_buffer.setter
     def tag_buffer(self, value: bytes):
         self._tag_buffer = value
+
+
+class KafkaRequestBody:
+    def __init__(self):
+        pass
+
+
+class KafkaRequest:
+    def __init__(self, header: KafkaRequestHeader, body: KafkaRequestBody):
+        self.header = header
+        self.bdoy = body
