@@ -72,6 +72,7 @@ class ApiVersionsResponse(KafkaResponseBody):
             self.api_versions = API_VERSIONS
         else:
             self.error_code = 35
+            self.api_versions = CompactArray(None)
         self.throttle_time = 0
         self.tag_buffer = bytes([0x00])
 
