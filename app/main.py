@@ -1,6 +1,6 @@
 import socket  # noqa: F401
 from app.api_versions import ApiVersionsResponse
-from app.request import KafkaRequestHeader
+from app.request import KafkaRequest
 from app.response import KafkaResponse, KafkaResponseHeader
 
 
@@ -13,12 +13,12 @@ def main():
     message_size = int.from_bytes(message_size, "big", signed=True)
 
     message = conn.recv(message_size)
-    request_header = KafkaRequestHeader(message)
+    request = KafkaRequest(message)
 
-    response_header = KafkaResponseHeader(request_header.correlation_id)
+    response_header = KafkaResponseHeader(request.header.correlation_id)
     response_body = None
-    if request_header.api_key == 18:
-        response_body = ApiVersionsResponse()
+    if request.header.api_key == 18:
+        response_body = ApiVersionsResponse(request.header.api_version)
     response = KafkaResponse(response_header, response_body)
     conn.sendall(bytes(response.size()) + bytes(response))
 

@@ -1,14 +1,19 @@
+from itertools import islice
+from typing import Iterator
+
+from app.api_versions import ApiVersionsRequest
+
+
 class KafkaRequestHeader:
-    def __init__(self, bytes: bytes):
-        self.api_key = bytes[:2]
-        self.api_version = bytes[2:4]
-        self.correlation_id = bytes[4:8]
+    def __init__(self, it: Iterator):
+        self.api_key = bytes(islice(it, 2))
+        self.api_version = bytes(islice(it, 2))
+        self.correlation_id = bytes(islice(it, 4))
 
-        length = bytes[8:10]
+        length = bytes(islice(it, 2))
         length = int.from_bytes(length, byteorder="big", signed=True)
-        self.client_id = None if length < 1 else bytes[10 : 10 + length]
-
-        self.tag_buffer = bytes[10 + length :]
+        self.client_id = None if length < 1 else bytes(islice(it, length))
+        self.tag_buffer = next(it)  # placeholder for tag buffer which is just 0x0 now
 
     @property
     def api_key(self):
@@ -60,8 +65,34 @@ class KafkaRequestBody:
     def __init__(self):
         pass
 
+    def __bytes__(self):
+        pass
+
 
 class KafkaRequest:
-    def __init__(self, header: KafkaRequestHeader, body: KafkaRequestBody):
-        self.header = header
-        self.bdoy = body
+    def __init__(self, bytes: bytes):
+        it = iter(bytes)
+        self.header = KafkaRequestHeader(it)
+        match self.header.api_key:
+            case 18:
+                self.body = ApiVersionsRequest(it)
+            case _:
+                self.body = KafkaRequestBody()
+
+    @property
+    def header(self) -> KafkaRequestHeader:
+        """The header property."""
+        return self._header
+
+    @header.setter
+    def header(self, value):
+        self._header = value
+
+    @property
+    def body(self) -> KafkaRequestBody:
+        """The body property."""
+        return self._body
+
+    @body.setter
+    def body(self, value):
+        self._body = value
