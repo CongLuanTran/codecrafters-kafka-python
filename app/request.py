@@ -1,8 +1,6 @@
 from itertools import islice
 from typing import Iterator, Self
 
-from app.api_versions import ApiVersionsRequest
-
 
 class KafkaRequestHeader:
     def __init__(
@@ -91,16 +89,6 @@ class KafkaRequest:
     def __init__(self, header: KafkaRequestHeader, body: KafkaRequestBody):
         self.header = header
         self.body = body
-
-    @classmethod
-    def deserialize(cls, it: Iterator):
-        header = KafkaRequestHeader.deserialize(it)
-        match header.api_key:
-            case 18:
-                body = ApiVersionsRequest.deserialize(it)
-            case _:
-                body = KafkaRequestBody()
-        return cls(header, body)
 
     @property
     def header(self):

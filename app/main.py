@@ -1,6 +1,6 @@
 import socket  # noqa: F401
-from app.api_versions import ApiVersionsResponse
-from app.request import KafkaRequest
+from app.api_versions import ApiVersionsRequest, ApiVersionsResponse
+from app.request import KafkaRequest, KafkaRequestBody, KafkaRequestHeader
 from app.response import KafkaResponse, KafkaResponseHeader
 
 
@@ -8,18 +8,26 @@ def main():
     print("Logs from your program will appear here!")
     server = socket.create_server(("localhost", 9092), reuse_port=True)
     conn, addr = server.accept()  # wait for client
-    message_size = conn.recv(4)
-    message_size = int.from_bytes(message_size, "big", signed=True)
+    while True:
+        message_size = conn.recv(4)
+        message_size = int.from_bytes(message_size, "big", signed=True)
 
-    message = conn.recv(message_size)
-    request = KafkaRequest.deserialize(iter(message))
+        message = conn.recv(message_size)
+        it = iter(message)
+        request_header = KafkaRequestHeader.deserialize(it)
+        match request_header.api_key:
+            case 18:
+                request_body = ApiVersionsRequest.deserialize(it)
+            case _:
+                request_body = KafkaRequestBody()
+        request = KafkaRequest(request_header, request_body)
 
-    response_header = KafkaResponseHeader(request.header.correlation_id)
-    response_body = None
-    if request.header.api_key == 18:
-        response_body = ApiVersionsResponse(request.header.api_version)
-    response = KafkaResponse(response_header, response_body)
-    conn.sendall(bytes(response.size()) + bytes(response))
+        response_header = KafkaResponseHeader(request_header.correlation_id)
+        response_body = None
+        if request_header.api_key == 18:
+            response_body = ApiVersionsResponse(request_header.api_version)
+        response = KafkaResponse(response_header, response_body)
+        conn.sendall(bytes(response.size()) + bytes(response))
 
 
 if __name__ == "__main__":
