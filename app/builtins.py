@@ -33,15 +33,6 @@ class UnsignedVarint:
             shift += 7
         raise ValueError("Invalid UnsignedVarint: not enough bytes to deserialize")
 
-    @property
-    def value(self):
-        """The value property."""
-        return self._value
-
-    @value.setter
-    def value(self, value):
-        self._value = value
-
 
 class CompactString:
     def __init__(self, value: str | None):
@@ -72,15 +63,6 @@ class CompactString:
             raise ValueError("Invalid CompactString: not enough bytes to deserialize")
         return cls(result.decode())
 
-    @property
-    def value(self) -> str | None:
-        """The value property."""
-        return self._value
-
-    @value.setter
-    def value(self, value):
-        self._value = value
-
 
 class CompactArray:
     def __init__(self, value: list | None):
@@ -96,12 +78,3 @@ class CompactArray:
             for item in self.value:
                 result.extend(bytes(item))
         return bytes(result)
-
-    @property
-    def value(self):
-        """The value property."""
-        return self._value
-
-    @value.setter
-    def value(self, value):
-        self._value = value

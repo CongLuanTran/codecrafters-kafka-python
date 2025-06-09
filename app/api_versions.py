@@ -1,10 +1,17 @@
-from typing import Iterator
+from typing import Iterator, Self
 from app.builtins import CompactArray, CompactString
+from app.request import KafkaRequestBody
 from app.response import KafkaResponseBody
 
 
 class ApiVersion:
-    def __init__(self, api_key, min_version, max_version, tag_buffer):
+    def __init__(
+        self,
+        api_key: int,
+        min_version: int,
+        max_version: int,
+        tag_buffer: bytes,
+    ):
         self.api_key = api_key
         self.min_version = min_version
         self.max_version = max_version
@@ -31,42 +38,27 @@ API_VERSIONS = CompactArray(
 )
 
 
-class ApiVersionsRequest:
-    def __init__(self, it: Iterator):
-        self.client_id = CompactString.deserialize(it)
-        self.client_software_version = CompactString.deserialize(it)
-        self.tag_buffer = next(it)  # placeholder for tag buffer
+class ApiVersionsRequest(KafkaRequestBody):
+    def __init__(
+        self,
+        client_id: CompactString,
+        client_software_version: CompactString,
+        tag_buffer: bytes,
+    ):
+        self.client_id = client_id
+        self.client_software_version = client_software_version
+        self.tag_buffer = tag_buffer
 
-    @property
-    def client_id(self) -> CompactString:
-        """The client_id property."""
-        return self._client_id
-
-    @client_id.setter
-    def client_id(self, value):
-        self._client_id = value
-
-    @property
-    def client_software_version(self) -> CompactString:
-        """The client_softwaere_version property."""
-        return self._client_softwaere_version
-
-    @client_software_version.setter
-    def client_software_version(self, value):
-        self._client_softwaere_version = value
-
-    @property
-    def tag_buffer(self) -> CompactString:
-        """The tag_buffer property."""
-        return self._tag_buffer
-
-    @tag_buffer.setter
-    def tag_buffer(self, value):
-        self._tag_buffer = value
+    @classmethod
+    def deserialize(cls, it: Iterator) -> Self:
+        client_id = CompactString.deserialize(it)
+        client_software_version = CompactString.deserialize(it)
+        tag_buffer = next(it)  # placeholder for tag buffer
+        return cls(client_id, client_software_version, tag_buffer)
 
 
 class ApiVersionsResponse(KafkaResponseBody):
-    def __init__(self, request_api_version):
+    def __init__(self, request_api_version: int):
         if 0 <= request_api_version <= 4:
             self.error_code = 0
             self.api_versions = API_VERSIONS
@@ -86,21 +78,3 @@ class ApiVersionsResponse(KafkaResponseBody):
 
     def size(self):
         return len(bytes(self))
-
-    @property
-    def error_code(self) -> int:
-        """The error_code property."""
-        return self._error_code
-
-    @error_code.setter
-    def error_code(self, value):
-        self._error_code = value
-
-    @property
-    def api_versions(self) -> CompactArray:
-        """The api_versions property."""
-        return self._api_versions
-
-    @api_versions.setter
-    def api_versions(self, value):
-        self._api_versions = value

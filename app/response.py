@@ -11,15 +11,6 @@ class KafkaResponseHeader:
     def size(self):
         return len(bytes(self))
 
-    @property
-    def correlation_id(self) -> int:
-        """The correlation_id property."""
-        return self._correlation_id
-
-    @correlation_id.setter
-    def correlation_id(self, value):
-        self._correlation_id = value
-
 
 class KafkaResponseBody(ABC):
     @abstractmethod
