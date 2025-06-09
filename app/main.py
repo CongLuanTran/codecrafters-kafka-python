@@ -7,9 +7,8 @@ from app.response import KafkaResponse, KafkaResponseHeader
 def main():
     print("Logs from your program will appear here!")
     server = socket.create_server(("localhost", 9092), reuse_port=True)
+    conn, addr = server.accept()  # wait for client
     while True:
-        conn, addr = server.accept()  # wait for client
-
         message_size = conn.recv(4)
         message_size = int.from_bytes(message_size, "big", signed=True)
 
