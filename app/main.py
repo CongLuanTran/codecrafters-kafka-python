@@ -1,7 +1,7 @@
 import socket  # noqa: F401
-from app.api_versions import ApiVersionsResponse
-from app.request import KafkaRequest
-from app.response import KafkaResponse, KafkaResponseHeader
+from api_versions import ApiVersionsResponse
+from request import KafkaRequest
+from response import KafkaResponse, KafkaResponseHeader
 
 
 def main():
