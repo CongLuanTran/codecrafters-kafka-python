@@ -33,7 +33,13 @@ API_VERSIONS = CompactArray(
             min_version=0,
             max_version=4,
             tag_buffer=bytes([0x00]),
-        )
+        ),
+        ApiVersion(
+            api_key=75,
+            min_version=0,
+            max_version=0,
+            tag_buffer=bytes([0x00]),
+        ),
     ]
 )
 
