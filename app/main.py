@@ -1,31 +1,53 @@
 import socket  # noqa: F401
 import threading
 from app.api_versions import ApiVersionsRequest, ApiVersionsResponse
-from app.request import KafkaRequest, KafkaRequestBody, KafkaRequestHeader
+from app.describe_topic_partitions import DescribeTopicPartitionsRequest
+from app.request import KafkaRequestBody, KafkaRequestHeader
 from app.response import KafkaResponse, KafkaResponseHeader
 
+API_ROUTE = {
+    18: ApiVersionsRequest,  # ApiVersionsRequest
+    75: DescribeTopicPartitionsRequest,  # DescribeTopicPartitionsRequest
+}
 
-def handle_connection(conn, addr):
+
+def handle_connection(conn: socket.socket, addr: tuple[str, int]) -> None:
     print(f"[+] Connected by {addr}")
     try:
         while True:
-            message_size = conn.recv(4)
-            message_size = int.from_bytes(message_size, "big", signed=True)
+            # Read exactly 4 bytes for the message size
+            message_size_bytes = b""
+            while len(message_size_bytes) < 4:
+                chunk = conn.recv(4 - len(message_size_bytes))
+                if not chunk:
+                    raise ConnectionError(
+                        "Connection closed while reading message size"
+                    )
+                message_size_bytes += chunk
+            message_size = int.from_bytes(message_size_bytes, "big", signed=True)
 
-            message = conn.recv(message_size)
+            # Read the full message
+            message = b""
+            while len(message) < message_size:
+                chunk = conn.recv(message_size - len(message))
+                if not chunk:
+                    raise ConnectionError(
+                        "Connection closed while reading message body"
+                    )
+                message += chunk
+
             it = iter(message)
             request_header = KafkaRequestHeader.deserialize(it)
-            match request_header.api_key:
-                case 18:
-                    request_body = ApiVersionsRequest.deserialize(it)
-                case _:
-                    request_body = KafkaRequestBody()
-            request = KafkaRequest(request_header, request_body)
+            request_body = API_ROUTE.get(
+                request_header.api_key, KafkaRequestBody
+            ).deserialize(it)
 
             response_header = KafkaResponseHeader(request_header.correlation_id)
-            response_body = None
-            if request_header.api_key == 18:
-                response_body = ApiVersionsResponse(request_header.api_version)
+            response_body = (
+                ApiVersionsResponse(request_header.api_version)
+                if request_header.api_key == 18
+                else None
+            )
             response = KafkaResponse(response_header, response_body)
             conn.sendall(bytes(response.size()) + bytes(response))
     except Exception as e:
@@ -40,7 +62,7 @@ def main():
     server = socket.create_server(("localhost", 9092), reuse_port=True)
     print("[*] server listening on localhost:9092")
     while True:
-        conn, addr = server.accept()  # wait for client
+        conn, addr = server.accept()
         thread = threading.Thread(target=handle_connection, args=(conn, addr))
         thread.start()
 

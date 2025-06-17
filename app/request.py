@@ -1,7 +1,10 @@
+from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from itertools import islice
-from typing import Iterator, Self
+from typing import Self, final
 
 
+@final
 class KafkaRequestHeader:
     def __init__(
         self,
@@ -18,7 +21,7 @@ class KafkaRequestHeader:
         self.tag_buffer = tag_buffer
 
     @classmethod
-    def deserialize(cls, it: Iterator) -> Self:
+    def deserialize(cls, it: Iterator[int]) -> Self:
         api_key = int.from_bytes(bytes(islice(it, 2)), byteorder="big", signed=True)
         api_version = int.from_bytes(bytes(islice(it, 2)), byteorder="big", signed=True)
         correlation_id = int.from_bytes(
@@ -28,82 +31,23 @@ class KafkaRequestHeader:
         length = bytes(islice(it, 2))
         length = int.from_bytes(length, byteorder="big", signed=True)
         client_id = None if length < 1 else bytes(islice(it, length)).decode()
-        tag_buffer = next(it)
+        tag_buffer = bytes(next(it))
         return cls(api_key, api_version, correlation_id, client_id, tag_buffer)
 
-    @property
-    def api_key(self):
-        """The api_key property."""
-        return self._api_key
 
-    @api_key.setter
-    def api_key(self, value: int):
-        self._api_key = value
-
-    @property
-    def api_version(self):
-        """The api_version property."""
-        return self._api_version
-
-    @api_version.setter
-    def api_version(self, value: int):
-        self._api_version = value
-
-    @property
-    def correlation_id(self):
-        """The correlation_id property."""
-        return self._correlation_id
-
-    @correlation_id.setter
-    def correlation_id(self, value: int):
-        self._correlation_id = value
-
-    @property
-    def client_id(self):
-        """The client_id property."""
-        return self._client_id
-
-    @client_id.setter
-    def client_id(self, value: str | None):
-        self._client_id = value
-
-    @property
-    def tag_buffer(self):
-        """The tag_buffer property."""
-        return self._tag_buffer
-
-    @tag_buffer.setter
-    def tag_buffer(self, value: bytes):
-        self._tag_buffer = value
-
-
-class KafkaRequestBody:
+class KafkaRequestBody(ABC):
+    @abstractmethod
     def __init__(self):
         pass
 
-    def __bytes__(self):
+    @abstractmethod
+    @classmethod
+    def deserialize(cls, it: Iterator[int]) -> Self:
         pass
 
 
+@final
 class KafkaRequest:
     def __init__(self, header: KafkaRequestHeader, body: KafkaRequestBody):
         self.header = header
         self.body = body
-
-    @property
-    def header(self):
-        """The header property."""
-        return self._header
-
-    @header.setter
-    def header(self, value: KafkaRequestHeader):
-        self._header = value
-
-    @property
-    def body(self):
-        """The body property."""
-        return self._body
-
-    @body.setter
-    def body(self, value: KafkaRequestBody):
-        self._body = value

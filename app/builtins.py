@@ -1,7 +1,9 @@
 from itertools import islice
-from typing import Iterator, Self
+from typing import Any, Self, final, override
+from collections.abc import Iterator
 
 
+@final
 class UnsignedVarint:
     def __init__(self, value: int):
         self.value = value
@@ -23,7 +25,7 @@ class UnsignedVarint:
         return bytes(result)
 
     @classmethod
-    def deserialize(cls, it: Iterator) -> Self:
+    def deserialize(cls, it: Iterator[int]) -> Self:
         result = 0
         shift = 0
         for byte in it:
@@ -34,10 +36,12 @@ class UnsignedVarint:
         raise ValueError("Invalid UnsignedVarint: not enough bytes to deserialize")
 
 
+@final
 class CompactString:
     def __init__(self, value: str | None):
         self.value = value
 
+    @override
     def __str__(self):
         return self.value or ""
 
@@ -53,7 +57,7 @@ class CompactString:
         return bytes(result)
 
     @classmethod
-    def deserialize(cls, it: Iterator) -> Self:
+    def deserialize(cls, it: Iterator[int]) -> Self:
         length = int(UnsignedVarint.deserialize(it))
         if length == 0:
             return cls(None)
@@ -64,8 +68,9 @@ class CompactString:
         return cls(result.decode())
 
 
+@final
 class CompactArray:
-    def __init__(self, value: list | None):
+    def __init__(self, value: list[Any] | None):
         self.value = value
 
     def __bytes__(self) -> bytes:
@@ -78,3 +83,14 @@ class CompactArray:
             for item in self.value:
                 result.extend(bytes(item))
         return bytes(result)
+
+    @classmethod
+    def deserialize(cls, it: Iterator[int]) -> Self:
+        length = int(UnsignedVarint.deserialize(it))
+        if length == 0:
+            return cls(None)
+        length = length - 1
+        result = []
+        while len(result) < length:
+            result.append(CompactString.deserialize(it))
+        return cls(result)

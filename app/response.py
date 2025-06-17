@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
+from typing import final
 
 
+@final
 class KafkaResponseHeader:
     def __init__(self, correlation_id: int):
         self.correlation_id = correlation_id
@@ -22,6 +24,7 @@ class KafkaResponseBody(ABC):
         pass
 
 
+@final
 class KafkaResponse:
     def __init__(self, header: KafkaResponseHeader, body: KafkaResponseBody | None):
         self.header = header
